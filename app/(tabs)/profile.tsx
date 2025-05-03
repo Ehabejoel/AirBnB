@@ -8,7 +8,6 @@ export default function ProfileScreen() {
   const accountItems = [
     { title: 'Personal information', icon: 'person' as const, onPress: () => router.push('/personal-info') },
     { title: 'Payments and payouts', icon: 'payment' as const, onPress: () => router.push('/payments') },
-    { title: 'Taxes', icon: 'receipt' as const },
   ];
 
   const preferencesItems = [
@@ -19,7 +18,6 @@ export default function ProfileScreen() {
 
   const hostingItems = [
     { title: 'List your space', icon: 'add-home' as const },
-    { title: 'Host dashboard', icon: 'dashboard' as const },
     { title: 'Resource center', icon: 'help' as const },
   ];
 
