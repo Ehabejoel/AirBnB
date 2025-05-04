@@ -1,6 +1,7 @@
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { removeToken, removeUser } from '../../utils/storage';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -38,6 +39,12 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const handleLogout = async () => {
+    await removeToken();
+    await removeUser();
+    router.replace('/');
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView>
@@ -73,7 +80,7 @@ export default function ProfileScreen() {
           {renderSection('Hosting', hostingItems)}
           {renderSection('Preferences', preferencesItems)}
 
-          <TouchableOpacity className="mt-6 mb-8">
+          <TouchableOpacity className="mt-6 mb-8" onPress={handleLogout}>
             <Text className="text-[#FF385C] font-semibold text-lg">Log out</Text>
           </TouchableOpacity>
         </View>

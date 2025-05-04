@@ -1,23 +1,13 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#FF385C',
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
             position: 'absolute',
@@ -29,35 +19,43 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="home" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="wishlist"
         options={{
           title: 'Wishlist',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="favorite" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="trips"
         options={{
           title: 'Trips',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="airplane" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="flight" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="inbox"
         options={{
           title: 'Inbox',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="message" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="person" size={28} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <MaterialIcons name="explore" size={28} color={color} />,
+          href: null,
         }}
       />
     </Tabs>

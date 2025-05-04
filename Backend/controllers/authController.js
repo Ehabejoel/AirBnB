@@ -9,29 +9,13 @@ const generateToken = (userId) => {
 
 exports.register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phoneNumber } = req.body;
-    
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-
-    const user = new User({
-      email,
-      password,
-      firstName,
-      lastName,
-      phoneNumber
-    });
-
+    const user = new User(req.body);
     await user.save();
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      user,
-      token
-    });
+    res.status(201).json({ user });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
     res.status(400).json({ error: error.message });
   }
 };
