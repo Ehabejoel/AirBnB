@@ -1,10 +1,35 @@
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { removeToken, removeUser } from '../../utils/storage';
+import { removeToken, removeUser, getToken } from '../../utils/storage';
+import { useState, useEffect } from 'react';
+import { getProfile } from '../../utils/api';
+import { API_URL } from '../../api/api_url';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          router.replace('/signin');
+          return;
+        }
+        const data = await getProfile(token);
+        setUserData(data);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const accountItems = [
     { title: 'Personal information', icon: 'person' as const, onPress: () => router.push('/personal-info') },
@@ -15,12 +40,15 @@ export default function ProfileScreen() {
     { title: 'Translation', icon: 'translate' as const },
     { title: 'Notifications', icon: 'notifications' as const },
     { title: 'Privacy and sharing', icon: 'security' as const },
-  ];
-
-  const hostingItems = [
-    { title: 'List your space', icon: 'add-home' as const },
-    { title: 'Resource center', icon: 'help' as const },
-  ];
+  ];  const hostingItems = userData?.roles?.includes('host')
+    ? [
+        { title: 'View Host Dashboard', icon: 'dashboard' as const, onPress: () => router.push('/(hosttabs)') },
+        { title: 'Resource center', icon: 'help' as const },
+      ]
+    : [
+        { title: 'List your space', icon: 'add-home' as const, onPress: () => router.push('/list-your-space') },
+        { title: 'Resource center', icon: 'help' as const },
+      ];
 
   const renderMenuItem = (item: { title: string; icon: keyof typeof MaterialIcons.glyphMap, onPress?: () => void }) => (
     <TouchableOpacity key={item.title} className="flex-row items-center py-4" onPress={item.onPress}>
@@ -42,8 +70,16 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     await removeToken();
     await removeUser();
-    router.replace('/');
+    router.replace('/signin');
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -53,14 +89,22 @@ export default function ProfileScreen() {
           
           <TouchableOpacity 
             className="flex-row items-center mb-6"
-            onPress={() => router.push('/personal-profile')}
+            onPress={() => router.push('/personal-info')}
           >
-            <Image
-              source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-              className="w-16 h-16 rounded-full"
-            />
+            {userData?.profilePhoto ? (
+              <Image
+                source={{ uri: `${API_URL}${userData.profilePhoto}` }}
+                className="w-16 h-16 rounded-full"
+              />
+            ) : (
+              <View className="w-16 h-16 rounded-full bg-gray-200 items-center justify-center">
+                <MaterialIcons name="person" size={32} color="#9ca3af" />
+              </View>
+            )}
             <View className="ml-4">
-              <Text className="text-xl font-semibold">James Smith</Text>
+              <Text className="text-xl font-semibold">
+                {userData ? `${userData.firstName} ${userData.lastName}` : 'Guest User'}
+              </Text>
               <Text className="text-gray-500">Show profile</Text>
             </View>
           </TouchableOpacity>

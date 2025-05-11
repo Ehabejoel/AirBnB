@@ -26,24 +26,24 @@ export default function SignUp() {
 
     try {
       setIsLoading(true);
-      const [firstName, ...lastNameParts] = formData.fullName.trim().split(' ');
-      const lastName = lastNameParts.join(' ');
       
+      // Only send the required fields to match backend expectations
       const userData = {
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
-        firstName,
-        lastName,
+        fullName: formData.fullName.trim(),  // Send fullName directly
         phoneNumber: formData.phoneNumber,
         address: formData.address
       };
 
+      console.log('Attempting signup with:', { ...userData, password: '***' });
       const response = await signUp(userData);
       await storeToken(response.token);
       await storeUser(response.user);
       router.replace('/(tabs)');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
+      console.error('Signup error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);

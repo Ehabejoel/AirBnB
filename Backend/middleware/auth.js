@@ -22,4 +22,15 @@ const auth = async (req, res, next) => {
   }
 };
 
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.some(role => req.user.roles.includes(role))) {
+      return res.status(403).json({ 
+        message: 'You do not have permission to perform this action' 
+      });
+    }
+    next();
+  };
+};
+
 module.exports = auth;

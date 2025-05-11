@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import {
   View,
@@ -10,25 +10,28 @@ import {
   FlatList,
   SafeAreaView,
   StatusBar,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
+import { API_URL } from '../../api/api_url';
 
 interface Category {
   name: string;
   icon: keyof typeof MaterialIcons.glyphMap;
 }
 
-interface Listing {
-  id: string;
-  location: string;
-  distance: string;
-  dates: string;
-  price: string;
-  nights: string;
-  rating: number;
-  isFavorite: string;
-  image: string;
+interface Property {
+  _id: string;
+  title: string;
+  description: string;
+  location: {
+    city: string;
+    country: string;
+  };
+  price: number;
+  images: string[];
+  rating?: number;
 }
 
 interface SavedListings {
@@ -40,6 +43,28 @@ const { width } = Dimensions.get('window');
 const HomeScreen = () => {
   const [activeCategory, setActiveCategory] = useState<string>('Top cities');
   const [savedListings, setSavedListings] = useState<SavedListings>({});
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const fetchProperties = async () => {
+    try {
+      const response = await fetch(`${API_URL}/properties`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch properties');
+      }
+      const data = await response.json();
+      setProperties(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories: Category[] = [
     { name: 'Top cities', icon: 'location-city' },
@@ -47,31 +72,6 @@ const HomeScreen = () => {
     { name: 'Countryside', icon: 'cottage' },
     { name: 'National parks', icon: 'forest' },
     { name: 'Islands', icon: 'waves' },
-  ];
-
-  const listings: Listing[] = [
-    {
-      id: '1',
-      location: 'Medellin, Colombia',
-      distance: '9,639 kilometres away',
-      dates: '15-20 Jun',
-      price: '£799 GBP',
-      nights: 'for 5 nights',
-      rating: 4.94,
-      isFavorite: 'Guest favourite',
-      image: 'https://images.pexels.com/photos/1457841/pexels-photo-1457841.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
-    },
-    {
-      id: '2',
-      location: 'Barcelona, Spain',
-      distance: '1,325 kilometres away',
-      dates: '10-15 Jul',
-      price: '€650 EUR',
-      nights: 'for 5 nights',
-      rating: 4.88,
-      isFavorite: '',
-      image: 'https://images.pexels.com/photos/6908368/pexels-photo-6908368.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
-    }
   ];
 
   const toggleSaved = (id: string): void => {
@@ -93,46 +93,63 @@ const HomeScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderListingItem = ({ item }: { item: Listing }) => (
+  const renderListingItem = ({ item }: { item: Property }) => (
     <View className="mb-6">
       <TouchableOpacity 
         className="relative"
-        onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.id } })}
+        onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item._id } })}
       >
         <Image
-          source={{ uri: item.image }}
+          source={{ uri: `${API_URL}${item.images[0]}` }}
           className="w-full h-72 rounded-xl"
           resizeMode="cover"
         />
         <TouchableOpacity
-          onPress={() => toggleSaved(item.id)}
+          onPress={() => toggleSaved(item._id)}
           className="absolute top-4 right-4"
         >
           <MaterialIcons
-            name={savedListings[item.id] ? "favorite" : "favorite-border"}
+            name={savedListings[item._id] ? "favorite" : "favorite-border"}
             size={24}
-            color={savedListings[item.id] ? "#FF385C" : "#000"}
+            color={savedListings[item._id] ? "#FF385C" : "#000"}
           />
         </TouchableOpacity>
       </TouchableOpacity>
 
       <View className="mt-2">
         <View className="flex-row justify-between items-center">
-          <Text className="text-base font-medium">{item.location}</Text>
-          <View className="flex-row items-center">
-            <MaterialIcons name="star" size={16} color="#000" />
-            <Text className="ml-1">{item.rating}</Text>
-          </View>
+          <Text className="text-base font-medium">{item.location.city}, {item.location.country}</Text>
+          {item.rating && (
+            <View className="flex-row items-center">
+              <MaterialIcons name="star" size={16} color="#000" />
+              <Text className="ml-1">{item.rating}</Text>
+            </View>
+          )}
         </View>
-        <Text className="text-gray-500">{item.distance}</Text>
-        <Text className="text-gray-500">{item.dates}</Text>
+        <Text className="text-gray-500">{item.title}</Text>
         <View className="flex-row items-center">
-          <Text className="text-base font-medium">{item.price}</Text>
-          <Text className="text-gray-500 ml-1">{item.nights}</Text>
+          <Text className="text-base font-medium">£{item.price}</Text>
+          <Text className="text-gray-500 ml-1">per night</Text>
         </View>
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#FF385C" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-red-500">{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -171,9 +188,9 @@ const HomeScreen = () => {
 
         <View className="px-4 pt-2 pb-4">
           <FlatList
-            data={listings}
+            data={properties}
             renderItem={renderListingItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id}
             scrollEnabled={false}
           />
         </View>

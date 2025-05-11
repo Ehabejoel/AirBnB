@@ -1,64 +1,71 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: [true, 'Please provide your first name']
+  },
+  lastName: {
+    type: String,
+    required: [true, 'Please provide your last name']
+  },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Please provide your email'],
     unique: true,
-    trim: true,
     lowercase: true
   },
   password: {
     type: String,
-    required: true,
-    minLength: 6
-  },
-  firstName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true
+    required: [true, 'Please provide a password'],
+    minlength: 8
   },
   phoneNumber: {
     type: String,
-    trim: true
-  },
-  profileImage: {
-    type: String
+    default: null
   },
   address: {
     type: String,
-    trim: true
+    default: null
+  },
+  emergencyContact: {
+    type: String,
+    default: null
+  },
+  identityVerified: {
+    type: Boolean,
+    default: false
+  },
+  profilePhoto: {
+    type: String,
+    default: null
+  },
+  roles: {
+    type: [{
+      type: String,
+      enum: ['user', 'host', 'admin']
+    }],
+    default: ['user']
   }
 }, {
   timestamps: true
 });
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 8);
-  }
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Method to check password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove sensitive data before sending
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   return user;
 };
 
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
