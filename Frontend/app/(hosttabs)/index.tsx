@@ -1,9 +1,8 @@
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export default function HostDashboard() {
-  const stats = {
-    earnings: '£2,540',
+export default function HostDashboard() {  const stats = {
+    earnings: '2,540,000 FCFA',
     bookings: 12,
     views: 156,
     occupancyRate: '78%'

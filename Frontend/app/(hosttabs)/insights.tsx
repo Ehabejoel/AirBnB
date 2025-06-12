@@ -1,11 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export default function InsightsScreen() {
-  const metrics = [
+export default function InsightsScreen() {  const metrics = [
     { title: 'Occupancy Rate', value: '78%', trend: '+5%' },
-    { title: 'Average Daily Rate', value: '£433', trend: '+£23' },
-    { title: 'Monthly Revenue', value: '£2,540', trend: '+£340' },
+    { title: 'Average Daily Rate', value: '433,000 FCFA', trend: '+23,000 FCFA' },
+    { title: 'Monthly Revenue', value: '2,540,000 FCFA', trend: '+340,000 FCFA' },
     { title: 'Guest Satisfaction', value: '4.9', trend: '+0.2' }
   ];
 

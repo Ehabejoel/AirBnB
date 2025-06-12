@@ -3,6 +3,8 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../api/api_url';
+import { addToWishlist, removeFromWishlist, getMyWishlist } from '../../utils/api';
+import { getToken } from '../../utils/storage';
 import Map from '../../components/Map';
 
 interface Property {
@@ -58,6 +60,8 @@ const ListingDetails = () => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -75,8 +79,45 @@ const ListingDetails = () => {
       }
     };
 
+    const checkWishlistStatus = async () => {
+      try {
+        const token = await getToken();
+        if (!token || !id) return;
+        
+        const wishlistData = await getMyWishlist(token);
+        const isPropertyInWishlist = wishlistData.some((item: Property) => item._id === id);
+        setIsInWishlist(isPropertyInWishlist);
+      } catch (error) {
+        console.error('Error checking wishlist status:', error);
+      }
+    };
+
     fetchProperty();
+    checkWishlistStatus();
   }, [id]);
+
+  const toggleWishlist = async () => {
+    try {
+      setWishlistLoading(true);
+      const token = await getToken();
+      if (!token) {
+        router.push('/signin');
+        return;
+      }
+
+      if (isInWishlist) {
+        await removeFromWishlist(token, id as string);
+      } else {
+        await addToWishlist(token, id as string);
+      }
+
+      setIsInWishlist(!isInWishlist);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -128,11 +169,16 @@ const ListingDetails = () => {
             onPress={() => router.back()}
           >
             <Ionicons name="chevron-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity 
+          </TouchableOpacity>          <TouchableOpacity 
             className="absolute top-4 right-4 bg-white rounded-full p-2"
+            onPress={toggleWishlist}
+            disabled={wishlistLoading}
           >
-            <MaterialIcons name="favorite-border" size={24} color="#000" />
+            <MaterialIcons 
+              name={isInWishlist ? "favorite" : "favorite-border"} 
+              size={24} 
+              color={isInWishlist ? "#FF385C" : "#000"} 
+            />
           </TouchableOpacity>
         </View>
 
@@ -281,11 +327,10 @@ const ListingDetails = () => {
 
       {/* Sticky price and reserve button */}
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
-        <View className="flex-row items-center">
-          <View className="flex-1">
-            <Text className="text-xl font-semibold">£{property.price} GBP</Text>
+        <View className="flex-row items-center">        <View className="flex-1">
+            <Text className="text-xl font-semibold">{property.price} FCFA</Text>
             <Text className="text-base">Per night</Text>
-          </View>          <TouchableOpacity 
+          </View><TouchableOpacity 
             className="bg-[#FF385C] px-8 py-3 rounded-lg"
             onPress={() => router.push({
               pathname: '/booking/[propertyId]',

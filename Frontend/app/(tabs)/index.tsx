@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
 import { API_URL } from '../../api/api_url';
-import { addToWishlist, removeFromWishlist } from '../../utils/api';
+import { addToWishlist, removeFromWishlist, getMyWishlist } from '../../utils/api';
 import { getToken } from '../../utils/storage';
 
 interface Category {
@@ -51,6 +51,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     fetchProperties();
+    fetchWishlistData();
   }, []);
 
   const fetchProperties = async () => {
@@ -65,6 +66,28 @@ const HomeScreen = () => {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWishlistData = async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        return; // User not logged in, skip wishlist fetch
+      }
+      
+      const wishlistData = await getMyWishlist(token);
+      const savedListingsMap: SavedListings = {};
+      
+      // Convert wishlist array to savedListings object format
+      wishlistData.forEach((property: Property) => {
+        savedListingsMap[property._id] = true;
+      });
+      
+      setSavedListings(savedListingsMap);
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+      // Don't show error for wishlist fetch failure, just log it
     }
   };
 
@@ -146,7 +169,7 @@ const HomeScreen = () => {
         </View>
         <Text className="text-gray-500">{item.title}</Text>
         <View className="flex-row items-center">
-          <Text className="text-base font-medium">£{item.price}</Text>
+          <Text className="text-base font-medium">{item.price} FCFA</Text>
           <Text className="text-gray-500 ml-1">per night</Text>
         </View>
       </View>

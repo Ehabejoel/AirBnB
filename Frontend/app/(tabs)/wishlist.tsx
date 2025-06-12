@@ -95,10 +95,9 @@ export default function WishlistScreen() {
                     source={{ uri: `${API_URL}${property.images[0]}` }}
                     className="w-full h-48 rounded-xl"
                     resizeMode="cover"
-                  />
-                  <View className="absolute bottom-4 left-4">
+                  />                <View className="absolute bottom-4 left-4">
                     <Text className="text-white text-xl font-bold">{property.title}</Text>
-                    <Text className="text-white">£{property.price} per night</Text>
+                    <Text className="text-white">{property.price} FCFA per night</Text>
                   </View>
                 </View>
               </TouchableOpacity>
