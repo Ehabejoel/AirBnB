@@ -40,14 +40,17 @@ const userSchema = new mongoose.Schema({
   profilePhoto: {
     type: String,
     default: null
-  },
-  roles: {
+  },  roles: {
     type: [{
       type: String,
       enum: ['user', 'host', 'admin']
     }],
     default: ['user']
-  }
+  },
+  wishlist: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Property'
+  }]
 }, {
   timestamps: true
 });

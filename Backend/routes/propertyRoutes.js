@@ -10,4 +10,9 @@ router.get('/:id', propertyController.getProperty);
 router.patch('/:id', auth, propertyController.updateProperty);
 router.delete('/:id', auth, propertyController.deleteProperty);
 
+// Wishlist routes
+router.post('/:id/wishlist', auth, propertyController.addToWishlist);
+router.delete('/:id/wishlist', auth, propertyController.removeFromWishlist);
+router.get('/wishlist', auth, propertyController.getWishlist);
+
 module.exports = router;

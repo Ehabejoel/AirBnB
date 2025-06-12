@@ -23,17 +23,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bookings"
+        options={{
+          title: 'Bookings',
+          tabBarIcon: ({ color }) => <MaterialIcons name="book-online" size={28} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="wishlist"
         options={{
           title: 'Wishlist',
           tabBarIcon: ({ color }) => <MaterialIcons name="favorite" size={28} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="trips"
-        options={{
-          title: 'Trips',
-          tabBarIcon: ({ color }) => <MaterialIcons name="flight" size={28} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -100,7 +100,7 @@ export const becomeHost = async (token) => {
     }
     
     const userData = await response.json();
-    return userData;
+    return userData; // This will include the updated user object with host role
   } catch (error) {
     throw error;
   }
@@ -110,6 +110,7 @@ export const createProperty = async (token, propertyData) => {
   try {
     const formData = new FormData();
     
+    // Append all property data
     Object.keys(propertyData).forEach(key => {
       if (key === 'images') {
         propertyData.images.forEach((uri, index) => {
@@ -228,6 +229,166 @@ export const getMyWishlist = async (token) => {
     
     const data = await response.json();
     return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Booking API functions
+export const createBooking = async (token, bookingData) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(bookingData)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create booking');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getMyBookings = async (token, status = null, page = 1) => {
+  try {
+    let url = `${API_URL}/bookings/my-bookings?page=${page}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get bookings');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getHostBookings = async (token, status = null, page = 1) => {
+  try {
+    let url = `${API_URL}/bookings/host-bookings?page=${page}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get host bookings');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateBookingStatus = async (token, bookingId, status, cancellationReason = null) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status, cancellationReason })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update booking status');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const cancelBooking = async (token, bookingId, cancellationReason) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ cancellationReason })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to cancel booking');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getBookingDetails = async (token, bookingId) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/${bookingId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get booking details');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const checkAvailability = async (propertyId, checkInDate, checkOutDate) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/property/${propertyId}/availability?checkInDate=${checkInDate}&checkOutDate=${checkOutDate}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to check availability');
+    }
+    
+    return await response.json();
   } catch (error) {
     throw error;
   }

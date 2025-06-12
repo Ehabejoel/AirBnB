@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
 import { API_URL } from '../../api/api_url';
+import { addToWishlist, removeFromWishlist } from '../../utils/api';
+import { getToken } from '../../utils/storage';
 
 interface Category {
   name: string;
@@ -74,11 +76,27 @@ const HomeScreen = () => {
     { name: 'Islands', icon: 'waves' },
   ];
 
-  const toggleSaved = (id: string): void => {
-    setSavedListings(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+  const toggleSaved = async (id: string): Promise<void> => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      if (savedListings[id]) {
+        await removeFromWishlist(token, id);
+      } else {
+        await addToWishlist(token, id);
+      }
+
+      setSavedListings(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    }
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
@@ -97,7 +115,7 @@ const HomeScreen = () => {
     <View className="mb-6">
       <TouchableOpacity 
         className="relative"
-        onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item._id } })}
+        onPress={() => router.push({ pathname: "/propertydetails/[id]", params: { id: item._id } })}
       >
         <Image
           source={{ uri: `${API_URL}${item.images[0]}` }}
@@ -196,12 +214,12 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
 
-      <View className="absolute bottom-[90px] self-center z-50">
+      {/* <View className="absolute bottom-[90px] self-center z-50">
         <TouchableOpacity className="flex-row items-center justify-center bg-gray-900 py-3 px-4.5 rounded-full shadow-lg">
           <Text className="text-white font-semibold text-sm mr-1.5">Map</Text>
           <MaterialIcons name="map" size={18} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <View className="absolute bottom-0 left-0 right-0 bg-white flex-row justify-around pt-2 pb-5 border-t border-gray-100">
         <TouchableOpacity className="items-center relative">

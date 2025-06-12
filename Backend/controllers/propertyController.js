@@ -1,4 +1,5 @@
 const Property = require('../models/property');
+const User = require('../models/user');
 const multer = require('multer');
 const path = require('path');
 
@@ -143,6 +144,51 @@ exports.deleteProperty = async (req, res) => {
     }
 
     res.json({ message: 'Property deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.addToWishlist = async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    const userId = req.user.id;
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    // Update user's wishlist
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { wishlist: propertyId }
+    });
+
+    res.json({ message: 'Property added to wishlist' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.removeFromWishlist = async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    const userId = req.user.id;
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { wishlist: propertyId }
+    });
+
+    res.json({ message: 'Property removed from wishlist' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getWishlist = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('wishlist');
+    res.json(user.wishlist);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
