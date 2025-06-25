@@ -1,6 +1,10 @@
 const { Channel, Message, Typing } = require('../models/chat');
 const User = require('../models/user');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
+// Use environment variable or fallback secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 class SocketChatService {
   constructor() {
@@ -8,7 +12,6 @@ class SocketChatService {
     this.connectedUsers = new Map(); // userId -> socketId
   }
 
-  // Initialize Socket.IO
   initialize(io) {
     this.io = io;
     this.setupSocketHandlers();
@@ -18,16 +21,29 @@ class SocketChatService {
     this.io.on('connection', (socket) => {
       console.log('User connected:', socket.id);
 
-      // Handle user authentication and join
+      // AUTHENTICATE
       socket.on('authenticate', async (data) => {
         try {
-          const { userId, token } = data;
-          // You can add JWT token verification here if needed
-          
+          const { token } = data;
+          console.log('Authenticating with data:', data);
+
+          if (!token) {
+            socket.emit('authentication_error', { error: 'Token is required' });
+            return;
+          }
+
+          // Decode JWT
+          const decoded = jwt.verify(token, JWT_SECRET);
+          const userId = decoded.id;
+
+          if (!userId) {
+            socket.emit('authentication_error', { error: 'Invalid token: user ID missing' });
+            return;
+          }
+
           this.connectedUsers.set(userId, socket.id);
           socket.userId = userId;
-          
-          // Join user to their channels
+
           const userChannels = await this.getUserChannels(userId);
           userChannels.forEach(channel => {
             socket.join(channel.id);
@@ -36,26 +52,33 @@ class SocketChatService {
           socket.emit('authenticated', { success: true });
           console.log(`User ${userId} authenticated and joined channels`);
         } catch (error) {
-          console.error('Authentication error:', error);
+          console.error('Socket authentication error:', error);
           socket.emit('authentication_error', { error: error.message });
         }
       });
 
-      // Handle joining a specific channel
+      // JOIN CHANNEL
       socket.on('join_channel', async (data) => {
         try {
           const { channelId } = data;
+
+          if (!socket.userId) {
+            socket.emit('join_channel_error', { error: 'User not authenticated' });
+            return;
+          }
+
           const channel = await Channel.findOne({ id: channelId });
-          if (channel) {
-            const memberIds = (channel.members || []).filter(Boolean).map(id => id.toString());
-            if (memberIds.includes(socket.userId.toString())) {
-              socket.join(channelId);
-              socket.emit('joined_channel', { channelId, success: true });
-            } else {
-              socket.emit('join_channel_error', { error: 'Unauthorized or channel not found' });
-            }
-          } else {
+          if (!channel) {
             socket.emit('join_channel_error', { error: 'Channel not found' });
+            return;
+          }
+
+          const memberIds = (channel.members || []).map(id => id.toString());
+          if (memberIds.includes(socket.userId.toString())) {
+            socket.join(channelId);
+            socket.emit('joined_channel', { channelId, success: true });
+          } else {
+            socket.emit('join_channel_error', { error: 'Unauthorized to join this channel' });
           }
         } catch (error) {
           console.error('Join channel error:', error);
@@ -63,23 +86,23 @@ class SocketChatService {
         }
       });
 
-      // Handle sending messages
+      // SEND MESSAGE
       socket.on('send_message', async (data) => {
         try {
           const { channelId, text, messageType = 'text' } = data;
-          // Verify user is member of channel
           const channel = await Channel.findOne({ id: channelId });
+
           if (!channel) {
             socket.emit('message_error', { error: 'Channel not found' });
             return;
           }
-          const memberIds = (channel.members || []).filter(Boolean).map(id => id.toString());
-          if (!memberIds.includes(socket.userId.toString())) {
+
+          const memberIds = (channel.members || []).map(id => id.toString());
+          if (!memberIds.includes(socket.userId?.toString())) {
             socket.emit('message_error', { error: 'Unauthorized to send message' });
             return;
           }
 
-          // Create message
           const message = new Message({
             channelId,
             text,
@@ -90,13 +113,8 @@ class SocketChatService {
           await message.save();
           await message.populate('user', 'firstName lastName profilePhoto');
 
-          // Update channel's last message time
-          await Channel.findOneAndUpdate(
-            { id: channelId },
-            { lastMessage: new Date() }
-          );
+          await Channel.findOneAndUpdate({ id: channelId }, { lastMessage: new Date() });
 
-          // Emit to all channel members
           this.io.to(channelId).emit('new_message', {
             id: message._id,
             channelId: message.channelId,
@@ -111,92 +129,72 @@ class SocketChatService {
             createdAt: message.createdAt,
             readBy: message.readBy
           });
-
         } catch (error) {
           console.error('Send message error:', error);
           socket.emit('message_error', { error: error.message });
         }
       });
 
-      // Handle typing indicators
-      socket.on('typing_start', async (data) => {
+      // TYPING START
+      socket.on('typing_start', async ({ channelId }) => {
         try {
-          const { channelId } = data;
-          
-          // Verify user is member of channel
           const channel = await Channel.findOne({ id: channelId });
-          if (!channel || !channel.members.includes(socket.userId)) {
-            return;
-          }
+          if (!channel || !channel.members.includes(socket.userId)) return;
 
-          // Save typing indicator
           await Typing.findOneAndUpdate(
             { channelId, user: socket.userId },
             { channelId, user: socket.userId, isTyping: true },
             { upsert: true, new: true }
           );
 
-          // Emit to other channel members
           socket.to(channelId).emit('user_typing', {
             userId: socket.userId,
             channelId,
             isTyping: true
           });
-
         } catch (error) {
           console.error('Typing start error:', error);
         }
       });
 
-      socket.on('typing_stop', async (data) => {
+      // TYPING STOP
+      socket.on('typing_stop', async ({ channelId }) => {
         try {
-          const { channelId } = data;
-          
-          // Remove typing indicator
           await Typing.deleteOne({ channelId, user: socket.userId });
 
-          // Emit to other channel members
           socket.to(channelId).emit('user_typing', {
             userId: socket.userId,
             channelId,
             isTyping: false
           });
-
         } catch (error) {
           console.error('Typing stop error:', error);
         }
       });
 
-      // Handle marking messages as read
-      socket.on('mark_read', async (data) => {
+      // MARK MESSAGE READ
+      socket.on('mark_read', async ({ channelId, messageId }) => {
         try {
-          const { channelId, messageId } = data;
-          
-          await Message.findByIdAndUpdate(
-            messageId,
-            {
-              $addToSet: {
-                readBy: {
-                  user: socket.userId,
-                  readAt: new Date()
-                }
+          await Message.findByIdAndUpdate(messageId, {
+            $addToSet: {
+              readBy: {
+                user: socket.userId,
+                readAt: new Date()
               }
             }
-          );
+          });
 
-          // Emit read receipt to channel
           this.io.to(channelId).emit('message_read', {
             messageId,
             userId: socket.userId,
             readAt: new Date()
           });
-
         } catch (error) {
           console.error('Mark read error:', error);
         }
       });
 
-      // Handle disconnect
+      // DISCONNECT
       socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         if (socket.userId) {
@@ -206,31 +204,31 @@ class SocketChatService {
     });
   }
 
-  // Create a channel for a booking
   async createBookingChannel(bookingId, hostId, guestId, propertyTitle) {
     try {
       const channelId = `booking-${bookingId}`;
-      // Check if channel already exists
       let channel = await Channel.findOne({ id: channelId });
+
       if (!channel) {
         channel = new Channel({
           id: channelId,
           name: `${propertyTitle} - Booking Discussion`,
-          members: [mongoose.Types.ObjectId(hostId), mongoose.Types.ObjectId(guestId)],
+          members: [hostId, guestId],
           bookingId,
           propertyTitle,
-          createdBy: mongoose.Types.ObjectId(hostId)
+          createdBy: hostId
         });
         await channel.save();
-        // Send welcome message
+
         const welcomeMessage = new Message({
           channelId,
-          text: `🏠 Welcome to your booking discussion for "${propertyTitle}"! Feel free to ask any questions about your stay.`,
-          user: mongoose.Types.ObjectId(hostId), // System message from host
+          text: `🏠 Welcome to your booking discussion for "${propertyTitle}"!`,
+          user: hostId,
           messageType: 'system'
         });
         await welcomeMessage.save();
       }
+
       return channel;
     } catch (error) {
       console.error('Error creating booking channel:', error);
@@ -238,27 +236,20 @@ class SocketChatService {
     }
   }
 
-  // Get channels for a user
   async getUserChannels(userId) {
     try {
-      const channels = await Channel.find({
-        members: userId
-      })
-      .populate('members', 'firstName lastName profilePhoto')
-      .populate('bookingId', 'checkIn checkOut')
-      .sort({ lastMessage: -1 });
-
-      return channels;
+      return await Channel.find({ members: userId })
+        .populate('members', 'firstName lastName profilePhoto')
+        .populate('bookingId', 'checkIn checkOut')
+        .sort({ lastMessage: -1 });
     } catch (error) {
       console.error('Error getting user channels:', error);
       throw error;
     }
   }
 
-  // Get messages for a channel
   async getChannelMessages(channelId, userId, limit = 50, offset = 0) {
     try {
-      // Verify user is member of channel
       const channel = await Channel.findOne({ id: channelId });
       if (!channel || !channel.members.includes(userId)) {
         throw new Error('Unauthorized to access channel messages');
@@ -270,14 +261,13 @@ class SocketChatService {
         .limit(limit)
         .skip(offset);
 
-      return messages.reverse(); // Return in chronological order
+      return messages.reverse();
     } catch (error) {
       console.error('Error getting channel messages:', error);
       throw error;
     }
   }
 
-  // Add user to channel
   async addUserToChannel(channelId, userId) {
     try {
       const channel = await Channel.findOneAndUpdate(
@@ -286,13 +276,10 @@ class SocketChatService {
         { new: true }
       );
 
-      // If user is online, make them join the socket room
       const socketId = this.connectedUsers.get(userId);
       if (socketId && this.io) {
         const socket = this.io.sockets.sockets.get(socketId);
-        if (socket) {
-          socket.join(channelId);
-        }
+        if (socket) socket.join(channelId);
       }
 
       return channel;
@@ -302,7 +289,6 @@ class SocketChatService {
     }
   }
 
-  // Remove user from channel
   async removeUserFromChannel(channelId, userId) {
     try {
       const channel = await Channel.findOneAndUpdate(
@@ -311,13 +297,10 @@ class SocketChatService {
         { new: true }
       );
 
-      // If user is online, make them leave the socket room
       const socketId = this.connectedUsers.get(userId);
       if (socketId && this.io) {
         const socket = this.io.sockets.sockets.get(socketId);
-        if (socket) {
-          socket.leave(channelId);
-        }
+        if (socket) socket.leave(channelId);
       }
 
       return channel;
@@ -327,12 +310,10 @@ class SocketChatService {
     }
   }
 
-  // Get online status of users
   getOnlineUsers() {
     return Array.from(this.connectedUsers.keys());
   }
 
-  // Check if user is online
   isUserOnline(userId) {
     return this.connectedUsers.has(userId);
   }
