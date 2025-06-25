@@ -326,7 +326,7 @@ const BookingDetailsScreen = () => {
               <TouchableOpacity
                 className="bg-[#FF385C] p-4 rounded-lg flex-row items-center justify-center"
                 onPress={() => router.push({
-                  pathname: '/chatDetailSreen',
+                  pathname: '/chatDetailScreen',
                   params: {
                     channelId: `booking-${booking._id}`,
                     channelType: 'messaging',

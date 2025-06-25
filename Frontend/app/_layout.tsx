@@ -74,7 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="chatDetailSreen" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="chatDetailScreen" options={{ presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </ChatProvider>

@@ -1,6 +1,3 @@
-// This file has been renamed to chatDetailScreen.tsx. Please use that file instead.
-export {};
-
 import React, { useEffect, useState, useRef } from 'react';
 import { SafeAreaView, TouchableOpacity, View, Text, TextInput, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';

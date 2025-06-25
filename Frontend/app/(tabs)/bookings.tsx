@@ -105,7 +105,7 @@ export default function BookingsScreen() {
       // response should contain channel info: id, type, name
       const { channelId, channelType, channelName } = response;
       router.push({
-        pathname: '/chatDetailSreen',
+        pathname: '/chatDetailScreen',
         params: {
           channelId,
           channelType,
