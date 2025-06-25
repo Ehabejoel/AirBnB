@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import '../global.css';
 import { getToken } from '../utils/storage';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { ChatProvider } from '../contexts/ChatContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -67,12 +68,15 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <ChatProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="chatDetailSreen" options={{ presentation: 'modal' }} />
+        </Stack>
+      </ThemeProvider>
+    </ChatProvider>
   );
 }

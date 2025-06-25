@@ -1,6 +1,7 @@
 const Booking = require('../models/booking');
 const Property = require('../models/property');
 const User = require('../models/user');
+const streamChatService = require('../services/streamChatService');
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
@@ -174,14 +175,50 @@ exports.updateBookingStatus = async (req, res) => {
 
     if (!validTransitions[booking.status].includes(status)) {
       return res.status(400).json({ error: `Cannot change status from ${booking.status} to ${status}` });
-    }
-
-    booking.status = status;
+    }    booking.status = status;
     if (cancellationReason) {
       booking.cancellationReason = cancellationReason;
     }
 
     await booking.save();
+
+    // If booking is confirmed, create a chat channel
+    if (status === 'confirmed') {
+      try {
+        const populatedBookingForChat = await Booking.findById(booking._id)
+          .populate('property', 'title')
+          .populate('guest', 'firstName lastName email profilePhoto')
+          .populate('host', 'firstName lastName email profilePhoto');
+
+        // Create users in Stream Chat if they don't exist
+        await streamChatService.createUser(populatedBookingForChat.host._id.toString(), {
+          firstName: populatedBookingForChat.host.firstName,
+          lastName: populatedBookingForChat.host.lastName,
+          profilePhoto: populatedBookingForChat.host.profilePhoto,
+          email: populatedBookingForChat.host.email
+        });
+
+        await streamChatService.createUser(populatedBookingForChat.guest._id.toString(), {
+          firstName: populatedBookingForChat.guest.firstName,
+          lastName: populatedBookingForChat.guest.lastName,
+          profilePhoto: populatedBookingForChat.guest.profilePhoto,
+          email: populatedBookingForChat.guest.email
+        });
+
+        // Create the chat channel
+        await streamChatService.createBookingChannel(
+          booking._id.toString(),
+          populatedBookingForChat.host._id.toString(),
+          populatedBookingForChat.guest._id.toString(),
+          populatedBookingForChat.property.title
+        );
+
+        console.log(`Chat channel created for booking ${booking._id}`);
+      } catch (chatError) {
+        console.error('Error creating chat channel:', chatError);
+        // Don't fail the booking confirmation if chat creation fails
+      }
+    }
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate('property', 'title location images')

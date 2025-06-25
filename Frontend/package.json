@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "^1.22.3",
+    "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/native": "^6.1.14",
@@ -27,15 +27,18 @@
     "lodash.isempty": "^4.4.0",
     "nativewind": "latest",
     "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-native": "0.79.2",
     "react-native-calendars": "^1.1312.0",
     "react-native-picker": "^4.3.7",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.10.0",
+    "react-native-web": "^0.20.0",
     "react-native-webview": "^13.13.5",
-    "react-dom": "19.0.0",
-    "react-native-web": "^0.20.0"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "stream-chat-react-native": "^7.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

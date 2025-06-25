@@ -1,4 +1,5 @@
 import { API_URL } from '../api/api_url';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const signUp = async (userData) => {
   try {
@@ -385,6 +386,153 @@ export const checkAvailability = async (propertyId, checkInDate, checkOutDate) =
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to check availability');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Chat API functions
+export const getChatAuth = async () => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+
+    const response = await fetch(`${API_URL}/chat/token`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get chat authentication');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getUserChannels = async () => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+
+    const response = await fetch(`${API_URL}/chat/channels`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get channels');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getChannelMessages = async (channelId, limit = 50, offset = 0) => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+
+    const response = await fetch(`${API_URL}/chat/channels/${channelId}/messages?limit=${limit}&offset=${offset}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get messages');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getOnlineUsers = async () => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+
+    const response = await fetch(`${API_URL}/chat/online-users`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get online users');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const checkUserOnline = async (userId) => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+
+    const response = await fetch(`${API_URL}/chat/users/${userId}/online`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to check user online status');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const createBookingChannel = async (token, bookingId) => {
+  try {
+    const response = await fetch(`${API_URL}/chat/booking/${bookingId}/channel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create booking channel');
     }
     
     return await response.json();

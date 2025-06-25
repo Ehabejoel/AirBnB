@@ -1,7 +1,7 @@
 import { View, Text, FlatList, Dimensions, Image, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { getMyBookings, cancelBooking } from '../../utils/api';
+import { getMyBookings, cancelBooking, createBookingChannel } from '../../utils/api';
 import { getToken } from '../../utils/storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { API_URL } from '../../api/api_url';
@@ -94,6 +94,26 @@ export default function BookingsScreen() {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to cancel booking');
     } finally {
       setCancellingBookingId(null);
+    }
+  };
+
+  const handleMessageHost = async (booking: Booking) => {
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No auth token');
+      const response = await createBookingChannel(token, booking._id);
+      // response should contain channel info: id, type, name
+      const { channelId, channelType, channelName } = response;
+      router.push({
+        pathname: '/chatDetailSreen',
+        params: {
+          channelId,
+          channelType,
+          channelName: channelName || booking.property.title,
+        },
+      });
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to start chat');
     }
   };
 
@@ -206,6 +226,16 @@ export default function BookingsScreen() {
                 </Text>
               </View>
             )}
+
+            {item.status === 'confirmed' || item.status === 'completed' ? (
+              <TouchableOpacity
+                className="mt-3 bg-blue-50 border border-blue-200 p-3 rounded flex-row items-center justify-center"
+                onPress={() => handleMessageHost(item)}
+              >
+                <MaterialIcons name="chat" size={20} color="#2563eb" />
+                <Text className="text-blue-600 font-medium ml-2">Message Host</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>

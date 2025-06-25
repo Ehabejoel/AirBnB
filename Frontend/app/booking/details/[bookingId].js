@@ -319,10 +319,28 @@ const BookingDetailsScreen = () => {
                 </View>
               </View>
             </View>
-          </View>
-
-          {/* Action Buttons */}
+          </View>          {/* Action Buttons */}
           <View className="space-y-3 mb-8">
+            {/* Chat Button for Confirmed Bookings */}
+            {booking.status === 'confirmed' && (
+              <TouchableOpacity
+                className="bg-[#FF385C] p-4 rounded-lg flex-row items-center justify-center"
+                onPress={() => router.push({
+                  pathname: '/chatDetailSreen',
+                  params: {
+                    channelId: `booking-${booking._id}`,
+                    channelType: 'messaging',
+                    channelName: `${booking.property.title} - Chat`,
+                  }
+                })}
+              >
+                <MaterialIcons name="chat" size={20} color="white" />
+                <Text className="text-white font-semibold ml-2">
+                  Chat with {isHost ? 'Guest' : 'Host'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Host Actions */}
             {canManage && (
               <View className="flex-row space-x-3">
