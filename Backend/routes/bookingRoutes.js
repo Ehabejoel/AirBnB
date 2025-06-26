@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 router.post('/', auth, bookingController.createBooking);
 router.get('/my-bookings', auth, bookingController.getMyBookings);
 router.patch('/:bookingId/cancel', auth, bookingController.cancelBooking);
+router.patch('/:bookingId/checkin', auth, bookingController.confirmCheckIn);
 
 // Host routes
 router.get('/host-bookings', auth, bookingController.getHostBookings);

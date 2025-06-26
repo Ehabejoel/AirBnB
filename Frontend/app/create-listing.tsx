@@ -104,6 +104,7 @@ export default function CreateListingScreen() {
   const [guestCapacity, setGuestCapacity] = useState('');
   const [houseRules, setHouseRules] = useState<string[]>([]);
   const [newRule, setNewRule] = useState('');
+  const [hostMobileNumber, setHostMobileNumber] = useState('');
 
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -293,6 +294,10 @@ export default function CreateListingScreen() {
       formErrors.images = 'At least one image is required';
       isValid = false;
     }
+    if (!hostMobileNumber.trim()) {
+      formErrors.hostMobileNumber = 'Mobile money/orange number is required';
+      isValid = false;
+    }
 
     setErrors(formErrors);
     return isValid;
@@ -330,6 +335,7 @@ export default function CreateListingScreen() {
         houseRules,
         availableFrom: availableFrom.toISOString(),
         availableTo: availableTo.toISOString(),
+        hostMobileNumber,
       };
 
       await createProperty(token, propertyData);
@@ -636,6 +642,14 @@ export default function CreateListingScreen() {
               </>
             )}
           </TouchableOpacity>
+          <FormField
+            label="Mobile Money/Orange Number"
+            value={hostMobileNumber}
+            onChangeText={setHostMobileNumber}
+            placeholder="Enter your mobile money or orange number"
+            keyboardType="numeric"
+            error={errors.hostMobileNumber}
+          />
           <TouchableOpacity
             className={`bg-[#FF385C] p-4 rounded-lg items-center justify-center mb-8 ${isSubmitting ? 'opacity-70' : ''}`}
             onPress={handleSubmit}

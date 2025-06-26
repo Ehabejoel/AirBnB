@@ -2,6 +2,8 @@ const Booking = require('../models/booking');
 const Property = require('../models/property');
 const User = require('../models/user');
 const streamChatService = require('../services/streamChatService');
+const campayService = require('../services/campayService');
+const payoutService = require('../services/payoutService');
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
@@ -58,6 +60,26 @@ exports.createBooking = async (req, res) => {
     const totalPrice = nights * property.price;
     const serviceFee = Math.round(totalPrice * 0.1); // 10% service fee
     const taxes = Math.round(totalPrice * 0.05); // 5% taxes
+    const totalAmount = totalPrice + serviceFee + taxes;
+
+    // Initiate payment with Campay
+    let paymentResult = null;
+    try {
+      console.log('[Campay] Initiating payment:', {
+        amount: totalAmount,
+        phone: paymentDetails.phoneNumber,
+        description: `Booking payment for property ${property.title}`
+      });
+      paymentResult = await campayService.initiatePayment({
+        amount: totalAmount,
+        phone: paymentDetails.phoneNumber.startsWith('237') ? paymentDetails.phoneNumber : `237${paymentDetails.phoneNumber}`,
+        description: `Booking payment for property ${property.title}`
+      });
+      console.log('[Campay] Payment result:', paymentResult);
+    } catch (payErr) {
+      console.error('[Campay] Payment initiation failed:', payErr?.response?.data || payErr.message || payErr);
+      return res.status(400).json({ error: 'Payment initiation failed', details: payErr?.response?.data || payErr.message });
+    }
 
     // Create booking
     const booking = new Booking({
@@ -71,8 +93,12 @@ exports.createBooking = async (req, res) => {
       serviceFee,
       taxes,
       paymentMethod,
-      paymentDetails,
-      specialRequests
+      paymentDetails: {
+        ...paymentDetails,
+        transactionId: paymentResult.reference || paymentResult.transaction_id || ''
+      },
+      specialRequests,
+      paymentStatus: 'paid'
     });
 
     await booking.save();
@@ -335,6 +361,27 @@ exports.checkAvailability = async (req, res) => {
       available: isAvailable,
       conflictingBookings: existingBookings.length
     });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Guest confirms check-in
+exports.confirmCheckIn = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findOne({ _id: bookingId, guest: req.user.id });
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found or unauthorized' });
+    }
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Booking is not confirmed' });
+    }
+    booking.status = 'completed';
+    await booking.save();
+    // Schedule payout to host after 5 minutes
+    payoutService.scheduleHostPayout(bookingId);
+    res.json({ message: 'Check-in confirmed. Host payout will be processed in 5 minutes.' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

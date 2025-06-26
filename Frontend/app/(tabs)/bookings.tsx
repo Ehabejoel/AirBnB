@@ -28,6 +28,7 @@ interface Booking {
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected';
   paymentStatus: string;
+  payoutStatus?: string;
   specialRequests?: string;
 }
 
@@ -117,6 +118,27 @@ export default function BookingsScreen() {
     }
   };
 
+  const handleConfirmCheckIn = async (bookingId: string) => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/bookings/${bookingId}/checkin`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to confirm check-in');
+      }
+      Alert.alert('Check-in Confirmed', 'Thank you for confirming your check-in.');
+      loadBookings();
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to confirm check-in');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -194,6 +216,16 @@ export default function BookingsScreen() {
               </Text>
             </View>
             
+            {/* Payment & Payout Status */}
+            <View className="flex-row justify-between items-center mb-2 mt-2">
+              <Text className="text-gray-600">Payment Status:</Text>
+              <Text className="font-medium capitalize">{item.paymentStatus || 'pending'}</Text>
+            </View>
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-gray-600">Payout Status:</Text>
+              <Text className="font-medium capitalize">{item.payoutStatus || 'pending'}</Text>
+            </View>
+
             {item.specialRequests && (
               <View className="mt-3 p-3 bg-gray-50 rounded">
                 <Text className="text-sm text-gray-600">
@@ -236,6 +268,17 @@ export default function BookingsScreen() {
                 <Text className="text-blue-600 font-medium ml-2">Message Host</Text>
               </TouchableOpacity>
             ) : null}
+
+            {/* Confirm Check-in Button */}
+            {item.status === 'confirmed' && new Date(item.checkInDate) <= new Date() && (
+              <TouchableOpacity
+                className="mt-3 bg-green-50 border border-green-200 p-3 rounded flex-row items-center justify-center"
+                onPress={() => handleConfirmCheckIn(item._id)}
+              >
+                <MaterialIcons name="check-circle" size={20} color="#16a34a" />
+                <Text className="text-green-700 font-medium ml-2">Confirm Check-in</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableOpacity>

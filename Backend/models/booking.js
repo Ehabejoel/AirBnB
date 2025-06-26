@@ -75,6 +75,14 @@ const bookingSchema = new mongoose.Schema({
   review: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Review'
+  },
+  payoutStatus: {
+    type: String,
+    enum: ['pending', 'processing', 'paid', 'failed'],
+    default: 'pending'
+  },
+  payoutTransactionId: {
+    type: String
   }
 }, {
   timestamps: true

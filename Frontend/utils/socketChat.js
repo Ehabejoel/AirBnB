@@ -38,7 +38,6 @@ class SocketChatClient {
 
       // Authenticate with server
       this.socket.emit('authenticate', {
-        userId: this.userId,
         token: token
       });
 

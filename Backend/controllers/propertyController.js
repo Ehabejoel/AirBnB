@@ -46,7 +46,8 @@ exports.createProperty = async (req, res) => {
         availability: {
           startDate: new Date(req.body.availableFrom),
           endDate: new Date(req.body.availableTo)
-        }
+        },
+        hostMobileNumber: req.body.hostMobileNumber // Add this line
       };
 
       const property = new Property(propertyData);

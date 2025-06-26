@@ -67,6 +67,10 @@ const propertySchema = new mongoose.Schema({
     patio: { type: Boolean, default: false },
     security: { type: Boolean, default: false }
   },
+  hostMobileNumber: {
+    type: String,
+    required: [true, 'Host mobile money/orange number is required']
+  },
   houseRules: [String],
   images: [String],
   availability: {
