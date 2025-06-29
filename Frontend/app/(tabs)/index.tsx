@@ -11,7 +11,8 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
 import { API_URL } from '../../api/api_url';
@@ -48,6 +49,7 @@ const HomeScreen = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchProperties();
@@ -89,6 +91,13 @@ const HomeScreen = () => {
       console.error('Error fetching wishlist:', error);
       // Don't show error for wishlist fetch failure, just log it
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProperties();
+    await fetchWishlistData();
+    setRefreshing(false);
   };
 
   const categories: Category[] = [
@@ -208,6 +217,14 @@ const HomeScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="pb-20"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#FF385C"]}
+            tintColor="#FF385C"
+          />
+        }
       >
         <View className="pt-3 pb-4 border-b border-gray-100">
           <FlatList

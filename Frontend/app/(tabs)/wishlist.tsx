@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -22,12 +22,15 @@ export default function WishlistScreen() {
   const [wishlist, setWishlist] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchWishlist();
   }, []);
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const token = await getToken();
       if (!token) {
@@ -39,7 +42,8 @@ export default function WishlistScreen() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      if (isRefresh) setRefreshing(false);
+      else setLoading(false);
     }
   };
 
@@ -56,7 +60,7 @@ export default function WishlistScreen() {
       <View className="flex-1 justify-center items-center p-4">
         <Text className="text-red-500 text-center">{error}</Text>
         <TouchableOpacity 
-          onPress={fetchWishlist}
+          onPress={() => fetchWishlist()}
           className="mt-4 bg-black py-3 px-5 rounded-lg"
         >
           <Text className="text-white font-semibold">Try again</Text>
@@ -71,7 +75,16 @@ export default function WishlistScreen() {
         <Text className="text-2xl font-bold">Wishlists</Text>
       </View>
 
-      <ScrollView className="flex-1">
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchWishlist(true)}
+            colors={["#FF385C"]}
+          />
+        }
+      >
         <View className="p-4">          {wishlist.length === 0 ? (
             <View className="bg-gray-100 rounded-2xl p-4 mb-8">
               <Text className="text-xl font-semibold mb-2">Create your first wishlist</Text>

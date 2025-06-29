@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Dimensions, Image, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, Dimensions, Image, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, SafeAreaView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { getMyBookings, cancelBooking, createBookingChannel } from '../../utils/api';
@@ -163,6 +163,7 @@ export default function BookingsScreen() {
     const canCancelBasedOnTime = hoursToCheckIn > 24;
 
     return (
+      <SafeAreaView>
       <TouchableOpacity 
         className="bg-white rounded-lg shadow-sm mb-4 overflow-hidden"
         onPress={() => router.push(`/propertydetails/${item.property._id}`)}
@@ -282,6 +283,7 @@ export default function BookingsScreen() {
           </View>
         </View>
       </TouchableOpacity>
+      </SafeAreaView>
     );
   };
 
@@ -332,3 +334,4 @@ export default function BookingsScreen() {
     </View>
   );
 }
+

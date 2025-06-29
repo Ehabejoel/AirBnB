@@ -98,10 +98,36 @@ exports.createBooking = async (req, res) => {
         transactionId: paymentResult.reference || paymentResult.transaction_id || ''
       },
       specialRequests,
-      paymentStatus: 'paid'
+      paymentStatus: 'pending' // Set to 'pending' until Campay confirms payment
     });
 
     await booking.save();
+
+    // Poll Campay for payment confirmation every 3 seconds, up to 1 minute
+    const pollInterval = 3000; // 3 seconds
+    const maxAttempts = 20; // 1 minute max
+    let attempts = 0;
+    let paymentConfirmed = false;
+    while (attempts < maxAttempts && !paymentConfirmed) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      try {
+        const statusResult = await campayService.checkPaymentStatus(
+          paymentResult.reference || paymentResult.transaction_id
+        );
+        if (statusResult.status === 'SUCCESSFUL') {
+          booking.paymentStatus = 'paid';
+          await booking.save();
+          paymentConfirmed = true;
+        } else if (statusResult.status === 'FAILED') {
+          booking.paymentStatus = 'failed';
+          await booking.save();
+          break;
+        }
+      } catch (err) {
+        // Optionally log error, but continue polling
+      }
+      attempts++;
+    }
 
     // Populate booking details for response
     const populatedBooking = await Booking.findById(booking._id)

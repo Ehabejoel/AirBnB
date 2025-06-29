@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createBooking, checkAvailability } from '../../utils/api';
 import { getToken } from '../../utils/storage';
+import { API_URL } from '../../api/api_url';
 
 const BookingScreen = () => {
   const { propertyId, title, price, image } = useLocalSearchParams();
@@ -30,6 +31,7 @@ const BookingScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [guestCapacity, setGuestCapacity] = useState<number | null>(null);
   const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
   const basePrice = parseFloat(Array.isArray(price) ? price[0] : price || '0');
   const totalPrice = nights * basePrice;
@@ -40,6 +42,21 @@ const BookingScreen = () => {
   useEffect(() => {
     checkPropertyAvailability();
   }, [checkInDate, checkOutDate]);
+
+  useEffect(() => {
+    // Fetch property details to get guestCapacity
+    const fetchProperty = async () => {
+      try {
+        const response = await fetch(`${API_URL}/properties/${propertyId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        setGuestCapacity(data.guestCapacity);
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchProperty();
+  }, [propertyId]);
 
   const checkPropertyAvailability = async () => {
     if (!propertyId || checkOutDate <= checkInDate) return;
@@ -148,12 +165,22 @@ const BookingScreen = () => {
         </TouchableOpacity>
         <Text className="text-lg font-medium">{numberOfGuests}</Text>
         <TouchableOpacity
-          onPress={() => setNumberOfGuests(numberOfGuests + 1)}
+          onPress={() => {
+            if (guestCapacity === null || numberOfGuests < guestCapacity) {
+              setNumberOfGuests(numberOfGuests + 1);
+            } else {
+              Alert.alert('Limit Reached', `Maximum allowed guests: ${guestCapacity}`);
+            }
+          }}
           className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+          disabled={guestCapacity !== null && numberOfGuests >= guestCapacity}
         >
           <MaterialIcons name="add" size={20} color="#666" />
         </TouchableOpacity>
       </View>
+      {guestCapacity !== null && (
+        <Text className="text-xs text-gray-500 mt-1">Maximum allowed: {guestCapacity} guests</Text>
+      )}
     </View>
   );
 

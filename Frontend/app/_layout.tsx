@@ -1,3 +1,16 @@
+// Hide RedBox error screen and optionally silence warnings/errors
+if (typeof ErrorUtils !== 'undefined' && ErrorUtils.setGlobalHandler) {
+  const defaultHandler = ErrorUtils.getGlobalHandler && ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    // Log error quietly
+    if (defaultHandler) defaultHandler(error, isFatal);
+    // Do not show RedBox
+  });
+  // Optional: silence warnings and errors
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, SplashScreen } from 'expo-router';

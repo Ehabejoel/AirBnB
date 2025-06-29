@@ -47,7 +47,19 @@ async function sendPayout({ amount, phone, description }) {
   return response.data;
 }
 
+async function checkPaymentStatus(reference) {
+  const token = await getAccessToken();
+  const response = await axios.get(
+    `${CAMPAY_BASE_URL}/transaction/${reference}/`,
+    {
+      headers: { Authorization: `Token ${token}` }
+    }
+  );
+  return response.data;
+}
+
 module.exports = {
   initiatePayment,
-  sendPayout
+  sendPayout,
+  checkPaymentStatus
 };
